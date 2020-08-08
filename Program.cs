@@ -1,101 +1,87 @@
-﻿using System;
+using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Linq.Expressions;
-using System.Windows.Forms;
 using static System.Console;
 
-namespace Geg
+namespace FileSearcher
 {
-    class MainClass
+    class Program
     {
-        public static void Main(string[] args)
+        
+        static void Main(string[] args)
         {
-            if (args.Length < 1)
+            
+            Stopwatch stw = new Stopwatch();
+            stw.Start();
+
+            if(args.Length <= 0)
             {
-                WriteLine("First argument - path \nSecond argument - name of file");
-                
+                WriteLine("\n     Usage\n     FileSearcher PATH SEARCHPATTERN/NAME\n     FileSearhcer NAMEFILE - searching in current directory");
+            }
+            else if (args.Length == 1)
+            {
+                Find(args[0]);
+            }
+
+
+            stw.Stop();
+            if(stw.ElapsedMilliseconds > 1000)
+            {
+                WriteLine($"Time: {Convert.ToDouble(stw.ElapsedMilliseconds / 1000)} sec");
             }
             else
             {
-                Search(args[0], args[1]);
-            }
+                WriteLine($"Time: {stw.ElapsedMilliseconds} ms");
+            } 
         }
-        public static void Search(string path, string file)
+        private static void Find(string pattern)
         {
-            bool isFound = false;
-            // What to search.
-            string FileParameter = file;
-            // Where to search. 
-            string Path = path;
-            Stack<string> StackDirs = new Stack<string>();
-
-            StackDirs.Push(Path);
-
-            while (StackDirs.Count > 0)
+            int j = 0;
+            Stack<string> dirs = new Stack<string>();
+            dirs.Push(Directory.GetCurrentDirectory());
+            while (dirs.Count > 0)
             {
-                if (!isFound)
+                try
                 {
-                    string curr = StackDirs.Pop();
+                    foreach (string d in Directory.GetDirectories(dirs.Pop()))
+                    {
 
+                        dirs.Push(d);
+                        j++;
+                        //WriteLine(d);
+                    }
                     try
                     {
-                        string[] subDirs = Directory.GetDirectories(curr);
-
-                        foreach (string d in subDirs)
-                        {
-                            StackDirs.Push(d);
-                        }
-                    }
-                    catch (UnauthorizedAccessException e)
-                    {
-                        WriteLine(e.Message);
-                        continue;
-                    }
-                    catch (DirectoryNotFoundException e)
-                    {
-                        WriteLine(e.Message);
-                        continue;
-                    }
-
-
-                    string[] files;
-                    try
-                    {
-                        files = Directory.GetFiles(curr, FileParameter);
-
-                        foreach (string f in files)
+                        foreach (string f in Directory.GetFiles(dirs.Pop(), pattern))
                         {
                             FileInfo fi = new FileInfo(f);
-                            if (fi.Name == FileParameter)
+                            WriteLine($"File: {fi.FullName}");
+                            if (fi.FullName.Length < 1)
                             {
-                                WriteLine(fi.FullName);
-                                isFound = true;
-                                break;
+                                WriteLine("File not found");
                             }
-
                         }
                     }
-                    catch (FileNotFoundException e)
-                    {
-                        WriteLine(e.Message);
-                        break;
-                    }
-                    catch (UnauthorizedAccessException e)
+                    catch (Exception e)
                     {
                         WriteLine(e.Message);
                         continue;
                     }
 
                 }
-                else
+
+
+                catch(Exception e)
                 {
-                    WriteLine("\n========FINISH=========");
-                    break;
-                    
-                
+                    WriteLine(e.Message);
+                    continue;
                 }
+
+                
             }
+            WriteLine($"Searched total : {j} folders");
         }
     }
 }
